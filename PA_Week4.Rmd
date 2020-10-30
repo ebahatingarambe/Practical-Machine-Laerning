@@ -1,0 +1,122 @@
+---
+title: "PA_Practical Machine Learning"
+author: "nbahati"
+date: "10/25/2020"
+output: html_document
+---
+
+### Overview
+One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants.
+
+## Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: [] (http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har) (see the section on the Weight Lifting Exercise Dataset).
+
+## Data
+
+The training data for this project are available here:
+[] (https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv)
+
+The test data are available here:
+[] (https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv)
+
+The data for this project come from this source: [] (http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har). If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+
+## Download data
+```{r}
+fileUrl_training <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+fileUrl_testing <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+download.file(fileUrl_training, destfile = "training.csv")
+download.file(fileUrl_testing, destfile = "testing.csv")
+```
+
+### Load data and libraries
+
+```{r}
+library(caret); library (ggplot2); library (lattice)
+```
+
+```{r}
+my_training <- read.csv("training.csv", na.strings = c("NA", ""))
+my_testing <- read.csv("testing.csv", na.strings = c("NA", ""))
+```
+
+## Exploratory data analysis
+```{r}
+dim(my_training); dim(my_testing)
+```
+
+The training data sets contains 160 variables on 19622 observations while has testing data tes just collect the same data variables on just 20 observations.
+
+## Data cleaning
+#### 1. Subset columns to use in the prediction exercise
+```{r}
+training <- my_training[,-c(1:7)]
+testing <- my_testing[,-c(1:7)]
+```
+#### 2. Removing missing values and nera zero varinace
+These data sets have high numbers of missing values and near-zero varaiance variabes and should then be removed from the analysis.
+
+
+```{r}
+nearZeroVariance <- nearZeroVar(testing)
+training <- training[, -nearZeroVariance]
+testing <- training[, -nearZeroVariance]
+```
+
+## Separate training dataset to increase performance and accuracy
+```{r}
+# create training and testing date sets
+inTrain<- createDataPartition(y= training$classe, p=0.75, list=FALSE)
+training_train<- training[inTrain, ]
+training_test<- training[-inTrain, ]
+
+#Look at the dimension of boths data sets
+dim(training_train); dim(training_test)
+```
+
+## Predicition
+We model *classe* variable with all the other variables using a random forest ("rf"), boosted trees ("gbm") and linear discriminant analysis ("lda") model.
+
+We first change the class of the *classe* variable to a factor variable.
+```{r}
+library(randomForest)
+# convert the classe data type from character to factor variable
+training_train$classe <- factor(training_train$classe)
+training_test$classe <- factor(training_test$classe)
+```
+
+### Random Forest Model
+```{r}
+modfit_rf <- train (classe ~., data = training_train, method = "rf")
+```
+
+We then  predict the above model using the testing data set.
+```{r}
+#Prediction 
+predict_rf <- predict(modfit_rf, training_test)
+```
+
+We then show the model's *accuracy* measures.
+```{r}
+confMatrix_rf <- confusionMatrix(predict_rf, training_test$classe)
+confMatrix_rf
+```
+
+## Apply the random forest model to the testing data set
+Finally, with over 99% of accuracy we can immediate go forward and predict the original testing data set using the random forest predicted model.
+
+```{r}
+final_predict_rf <- predict(modfit_rf, my_testing)
+final_predict_rf
+```
+
+
+
+
+
+
+
+
+
